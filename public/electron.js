@@ -15,9 +15,10 @@ function createWindow() {
         width: 1000,
         height: 800,
         resizable: false,
+        icon: `${__dirname}/favicon.ico`,
         webPreferences: {
             nodeIntegration: true,
-            preload: __dirname + '/preload.js'
+            preload: `${__dirname}/preload.js`
         }
     });
     mainWindow.loadURL(
