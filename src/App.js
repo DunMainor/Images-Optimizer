@@ -14,6 +14,7 @@ import FolderIcon from './assets/images/folder_icon.png'
 // Constants
 const electron = window.require("electron")
 const ipcRenderer = electron.ipcRenderer
+const currentWindow = electron.remote.getCurrentWindow()
 
 class App extends React.Component {
 
@@ -25,6 +26,7 @@ class App extends React.Component {
     original_images_paths: [],
     optimized_images_paths: [],
     optimizing: false,
+    optimization_done: false,
     optimization_percent: 0,
   }
 
@@ -45,11 +47,15 @@ class App extends React.Component {
 
     ipcRenderer.on('OPTIMIZATION_COMPLETE', (event, params) => {
       this.setState({
-        optimizing: false,
         original_images_paths: params.combined_file_paths.original_images_paths,
         optimized_images_paths: params.combined_file_paths.optimized_images_paths
       }, () => {
         // console.log('Logging from main received optimized directories: ', params.combined_file_paths)
+        this.setState({ optimization_done: true }, () => {
+          setTimeout(() => {
+            this.setState({ optimizing: false, optimization_done: false })
+          }, 2000)
+        })
       })
     })
 
@@ -91,21 +97,25 @@ class App extends React.Component {
       optimized_images_paths: optimized_images_paths[0] === 'Pending' ? optimized_images_paths.slice(originals_removed) : optimized_images_paths.filter(image_path => !image_path.includes(dir)),
     }, () => {
       // console.log('Logging optimized Image Paths after filter: ', optimized_images_paths)
+      if (filtered_directories.length <= 0) {
+        // console.log('Logging current window: ', currentWindow)
+        currentWindow.reload()
+      }
     })
   }
 
-  widthUpdated = (event) => { this.setState({ width: parseInt(event.target.value, 10) }) }
-  heightUpdated = (event) => { this.setState({ width: parseInt(event.target.value, 10) }) }
+  widthUpdated = (event) => { event.target.value === '' ? this.setState({ width: 700 }) : this.setState({ width: event.target.value.replace(/\D/, '') }) }
+  heightUpdated = (event) => { event.target.value === '' ? this.setState({ height: 700 }) : this.setState({ height: event.target.value.replace(/\D/, '') }) }
 
 
 
   render = () => {
-    const { original_images_paths, optimized_images_paths, optimizing, optimization_percent, directories, folder_path } = this.state
+    const { original_images_paths, optimized_images_paths, optimizing, optimization_done, directories, folder_path, width, height } = this.state
     return (
       <LoadingOverlay
         active={optimizing}
         spinner
-        text={`Optimizing Images...`}
+        text={optimization_done ? 'Successfully Optimized All Images' : `Optimizing Images...`}
       >
         <div style={{ overflow: 'hidden' }} className="App" >
           <header className="App-container">
@@ -136,10 +146,10 @@ class App extends React.Component {
                       <MDBTableBody>
                         <tr>
                           <td>
-                            <input onChange={this.widthUpdated} className="form-control" type="text" name="width" id="width" placeholder="700" contentEditable />
+                            <input onChange={this.widthUpdated} value={width} className="form-control" type="text" name="width" id="width" placeholder="700" contentEditable />
                           </td>
                           <td>
-                            <input onChange={this.heightUpdated} className="form-control" type="text" name="height" id="height" placeholder="700" contentEditable />
+                            <input onChange={this.heightUpdated} value={height} className="form-control" type="text" name="height" id="height" placeholder="700" contentEditable />
                           </td>
                         </tr>
                       </MDBTableBody>
