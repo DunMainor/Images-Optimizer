@@ -69,7 +69,9 @@ optimizeImage = (image_path, width = 700, height = 700) => {
     return new Promise(async (resolve, reject) => {
         Jimp.read(image_path)
             .then(image_file => {
-                image_file.autocrop(10).cover(width, height) // resize
+                image_file
+                    .autocrop(10) // Crop First
+                    .scaleToFit(width, height) // scale
                     .quality(80) // set JPEG quality
                 resolve(image_file)
             })
@@ -83,7 +85,7 @@ optimizeImage = (image_path, width = 700, height = 700) => {
 optimizeImages = async (image_files, dimensions) => {
     return await Promise.all(
         image_files.map(async (original_image_path, index) => {
-            return await optimizeImage(original_image_path, dimensions.width, dimensions.height).then((optimized_image) => {
+            return await optimizeImage(original_image_path, parseInt(dimensions.width), parseInt(dimensions.height)).then((optimized_image) => {
                 let file_name = original_image_path.split('\\').pop()
                 let file_dir = original_image_path.split('\\').slice(0, -1).join('\\')
                 let optimized_image_path = `${file_dir}/optimized/${file_name}`
@@ -124,6 +126,7 @@ ipcMain.on('FOLDER_PATH', async (event, params) => {
 ipcMain.on('OPTIMIZE_IMAGES', async (event, params) => {
     let original_images_paths = params.original_images_paths
     let dimensions = params.dimensions
+    // console.log('Optimizational parameters: ', params)
     let optimized_images = await optimizeImages(original_images_paths, dimensions)
     // console.log('Received file paths: ', original_images_paths)
     if (Array.isArray(optimized_images)) {
